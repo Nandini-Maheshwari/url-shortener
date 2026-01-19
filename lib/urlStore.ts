@@ -30,3 +30,7 @@ export function saveUrl(code: string, longUrl: string) {
 export function getUrl(code: string) {
     return urlStore.get(code);
 }
+
+export function hasCode(code: string) {
+    return urlStore.has(code);
+}

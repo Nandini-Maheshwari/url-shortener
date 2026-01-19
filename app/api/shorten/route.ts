@@ -1,4 +1,4 @@
-import { generateShortCode, saveUrl } from "@/lib/urlStore";
+import { generateShortCode, saveUrl, hasCode } from "@/lib/urlStore";
 import { validateUrl } from "@/lib/validateUrl";
 import { NextResponse } from "next/server";
 
@@ -22,8 +22,15 @@ export async function POST(req: Request) {
         );
     }
 
-    const code = generateShortCode();
-    saveUrl(code, url);
+    let code: string;
+    do {
+        code = generateShortCode();
+    } while (hasCode(code));
+
+    //In production, enforce a unique constraint at the DB level
+    //and retry generation on conflict.
+
+    saveUrl(code, validatedUrl);
 
     return NextResponse.json({
         shortUrl: `http://localhost:3000/${code}`
