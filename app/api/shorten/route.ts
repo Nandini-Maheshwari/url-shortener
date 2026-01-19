@@ -1,3 +1,4 @@
+import { generateShortCode, saveUrl } from "@/lib/urlStore";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -11,9 +12,10 @@ export async function POST(req: Request) {
         );
     }
 
-    const shortCode = "abc123";
+    const code = generateShortCode();
+    saveUrl(code, url);
 
     return NextResponse.json({
-        shortUrl: `http://localhost:3000/${shortCode}`
+        shortUrl: `http://localhost:3000/${code}`
     });
 }
