@@ -1,6 +1,7 @@
-import { generateShortCode, saveUrl, hasCode } from "@/lib/urlStore";
+import { generateShortCode } from "@/lib/urlStore";
 import { validateUrl } from "@/lib/validateUrl";
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -14,7 +15,6 @@ export async function POST(req: Request) {
     }
 
     const validatedUrl = validateUrl(url);
-
     if(!validatedUrl) {
         return NextResponse.json(
             { error: "Invalid URL" },
@@ -22,17 +22,38 @@ export async function POST(req: Request) {
         );
     }
 
-    let code: string;
-    do {
-        code = generateShortCode();
-    } while (hasCode(code));
+    let shortCode: string;
+    let attempts = 0;
 
-    //In production, enforce a unique constraint at the DB level
-    //and retry generation on conflict.
+    while(attempts < 5) {
+        shortCode = generateShortCode();
 
-    saveUrl(code, validatedUrl);
+        const { error } = await supabase
+            .from("short_urls")
+            .insert({
+                short_code: shortCode,
+                long_url: validatedUrl,
+            });
+        
+        if(!error) {
+            return NextResponse.json({
+                shortUrl: `http://localhost:3000/${shortCode}`,
+            });
+        }
 
-    return NextResponse.json({
-        shortUrl: `http://localhost:3000/${code}`
-    });
+        //retry only on unique constraint violation
+        if(error.code != "23505") {
+            return NextResponse.json(
+                { error: "Database error"},
+                { status: 500 }
+            );
+        }
+
+        attempts++;
+    }
+
+    return NextResponse.json(
+        { error: "Failed to generate unique short url" },
+        { status: 500 }
+    );
 }
