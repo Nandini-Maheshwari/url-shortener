@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import { getUrl } from "@/lib/urlStore";
+import { supabase } from "@/lib/supabase";
 
 export default async function RedirectPage({
     params,
@@ -9,25 +9,29 @@ export default async function RedirectPage({
     console.log("hit");
 
     const { code } = await params;
-    const longUrl = getUrl(code);
-
-    if(!longUrl) {
+    
+    //1. fetch url
+    const { data, error } = await supabase
+        .from("short_urls")
+        .select("long_url, expires_at")
+        .eq("short_code", code)
+        .single();
+    
+    if(error || !data) {
         notFound();
     }
-    console.log("longUrl found: ", longUrl);
-    redirect(longUrl);
-}
 
-// GET /abc123
-// ↓
-// app/[code]/page.tsx runs
-// ↓
-// await params → { code: "abc123" }
-// ↓
-// getUrl("abc123")
-// ↓
-// redirect("https://...")
-// ↓
-// 307 Location header
-// ↓
-// Browser redirects
+    //2. Optional expiry check
+    if(data.expires_at && new Date(data.expires_at) < new Date()) {
+        notFound();
+    }
+
+    //3. Incremenet click count
+    void supabase.rpc("increment_click_count", {
+        sc: code,
+    });
+
+    //4. Redirect
+    console.log("redirect: ", data.long_url);
+    redirect(data.long_url);
+}

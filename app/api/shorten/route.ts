@@ -1,4 +1,4 @@
-import { generateShortCode } from "@/lib/urlStore";
+import { generateShortCode } from "@/lib/shortCode";
 import { validateUrl } from "@/lib/validateUrl";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +20,19 @@ export async function POST(req: Request) {
             { error: "Invalid URL" },
             { status: 400 }
         );
+    }
+
+    // check if long url already exists
+    const { data: existing } = await supabase
+        .from("short_urls")
+        .select("short_code")
+        .eq("long_url", validatedUrl)
+        .single();
+
+    if (existing) {
+        return NextResponse.json({
+            shortUrl: `http://localhost:3000/${existing.short_code}`,
+        });
     }
 
     let shortCode: string;

@@ -27,7 +27,7 @@ export default function Home() {
       }
 
       setShortUrl(data.shortUrl);
-      console.log("shortUrl: ", shortUrl);
+      console.log("shortUrl: ", data.shortUrl);
     } catch (err: any) {
       setError(err.message);
     } finally {
