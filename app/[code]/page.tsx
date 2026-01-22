@@ -31,7 +31,17 @@ export default async function RedirectPage({
         sc: code,
     });
 
+    // const { error: incrementError } = await supabase.rpc(
+    //     "increment_click_count",
+    //     { sc: code }
+    // );
+
+    // console.log("click increment error:", incrementError);  // <- should return null
+
     //4. Redirect
     console.log("redirect: ", data.long_url);
     redirect(data.long_url);
 }
+
+//server-rendered page, not a controller
+//navigation / redirect
