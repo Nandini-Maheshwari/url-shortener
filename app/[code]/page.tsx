@@ -21,7 +21,7 @@ export default async function RedirectPage({
         notFound();
     }
 
-    //2. Optional expiry check
+    //2. expiry check
     if(data.expires_at && new Date(data.expires_at) < new Date()) {
         notFound();
     }

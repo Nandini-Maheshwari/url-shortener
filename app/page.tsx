@@ -6,17 +6,40 @@ export default function Home() {
   const [shortUrl, setShortUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [expiryOption, setExpiryOption] = useState("3d");
+  const [customExpiry, setCustomExpiry] = useState("");
 
   async function handleShorten() {
     setLoading(true);
     setError("");
     setShortUrl("");
 
+    let expiresAt: string | undefined;
+
+    if (expiryOption !== "custom") {
+      const now = new Date();
+
+      const daysMap: Record<string, number> = {
+        "1d": 1,
+        "3d": 3,
+        "7d": 7,
+        "30d": 30,
+      };
+
+      now.setDate(now.getDate() + daysMap[expiryOption]);
+      expiresAt = now.toISOString();
+    } else if (expiryOption === "custom" && customExpiry) {
+      expiresAt = new Date(customExpiry).toISOString();
+    }
+
     try {
       const res = await fetch("/api/shorten", {
         method: "POST",
         headers: { "Content-Type": "application/json"},
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ 
+          url,
+          ...(expiresAt && { expiresAt }),
+        })
       });
 
       const data = await res.json();
@@ -55,6 +78,34 @@ export default function Home() {
         >
           {loading ? "Shortening..." : "Shorten URL"}
         </button>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            Expiry
+          </label>
+
+          <select
+            value={expiryOption}
+            onChange={(e) => setExpiryOption(e.target.value)}
+            className="w-full rounded border p-2"
+          >
+            <option value="1d">1 day</option>
+            <option value="3d">3 days (default)</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+            <option value="custom">Custom date</option>
+          </select>
+
+          {expiryOption === "custom" && (
+            <input
+              type="datetime-local"
+              value={customExpiry}
+              onChange={(e) => setCustomExpiry(e.target.value)}
+              className="w-full rounded border p-2"
+            />
+          )}
+        </div>
+
 
         {error && (
           <p className="text-center text-sm text-red-500">{error}</p>

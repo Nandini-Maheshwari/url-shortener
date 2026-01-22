@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
     const body = await req.json();
-    const { url } = body;
+    const { url, expiresAt } = body;
 
     if(!url) {
         return NextResponse.json(
@@ -22,12 +22,41 @@ export async function POST(req: Request) {
         );
     }
 
+    let expiryDate: string;
+
+    if(expiresAt) {
+        const date = new Date(expiresAt);
+        if(isNaN(date.getTime())) {
+            return NextResponse.json(
+                { error: "Invalid expiry date" },
+                { status: 400 }
+            );
+        }
+        if(date <= new Date()) {
+            return NextResponse.json(
+                { error: "Expiry must be in the future"},
+                { status: 400 }
+            );
+        }
+
+        expiryDate = date.toISOString();
+    } else {
+        const defaultExpiry = new Date();
+        defaultExpiry.setDate(defaultExpiry.getDate() + 3);
+
+        expiryDate = defaultExpiry.toISOString();
+    }
+
     // check if long url already exists
     const { data: existing } = await supabase
         .from("short_urls")
         .select("short_code")
         .eq("long_url", validatedUrl)
+        .gt("expires_at", new Date().toISOString()) //expired urls are ignored
         .single();
+
+    //not deleting expired url's data cause we dont wanna
+    //loose analytics
 
     if (existing) {
         return NextResponse.json({
@@ -46,6 +75,7 @@ export async function POST(req: Request) {
             .insert({
                 short_code: shortCode,
                 long_url: validatedUrl,
+                expires_at: expiryDate,
             });
         
         if(!error) {
