@@ -3,6 +3,19 @@ import { useState } from "react";
 
 const ALIAS_REGEX = /^[a-zA-Z0-9-]{3,30}$/;
 
+const RESERVED_ALIASES = [
+  "api",
+  "admin",
+  "login",
+  "logout",
+  "signup",
+  "register",
+  "dashboard",
+  "settings",
+  "favicon.ico",
+  "robots.txt",
+];
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
@@ -26,7 +39,7 @@ export default function Home() {
     setShortUrl("");
 
     if (alias && !isAliasValid) {
-      setError("Invalid alias. Use 3–30 characters: letters, numbers, dashes only.");
+      setError("Invalid alias. Use 3–30 characters: letters, numbers, dashes only. Don't use reserved alias.");
       setLoading(false);
       return;
     }
@@ -84,7 +97,9 @@ export default function Home() {
     }
   };
 
-  const isAliasValid = alias.length === 0 || ALIAS_REGEX.test(alias);
+  const isAliasReserved = alias.length > 0 && RESERVED_ALIASES.includes(alias.toLowerCase());
+
+  const isAliasValid = alias.length === 0 || (ALIAS_REGEX.test(alias) && !isAliasReserved);
 
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
@@ -170,7 +185,7 @@ export default function Home() {
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
-                    3–30 characters, letters, numbers, or dashes only
+                    3–30 characters, letters, numbers, or dashes only. 
                   </p>
                 )}
               </div>

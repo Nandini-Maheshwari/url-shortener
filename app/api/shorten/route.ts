@@ -5,6 +5,19 @@ import { supabase } from "@/lib/supabase";
 import { headers } from "next/headers";
 import { isAliasRateLimited, isRateLimited } from "@/lib/rateLimiter";
 
+const RESERVED_ALIASES = new Set([
+  "api",
+  "admin",
+  "login",
+  "logout",
+  "signup",
+  "register",
+  "dashboard",
+  "settings",
+  "favicon.ico",
+  "robots.txt",
+]);
+
 export async function POST(req: Request) {
     const body = await req.json();
     const { url, alias, expiresAt } = body;
@@ -97,6 +110,14 @@ export async function POST(req: Request) {
         if(!isValid) {
             return NextResponse.json(
                 { error: "Alias must be 3-30 characters and contain only letters, numbers or dashes" },
+                { status: 400 }
+            );
+        }
+
+        const normalizedAlias = cleanAlias.toLowerCase();
+        if(RESERVED_ALIASES.has(normalizedAlias)) {
+            return NextResponse.json(
+                { error: "This alias is reserved and cannot be used." },
                 { status: 400 }
             );
         }
