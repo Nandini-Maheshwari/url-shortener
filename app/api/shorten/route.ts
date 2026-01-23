@@ -25,7 +25,15 @@ export async function POST(req: Request) {
         );
     }
 
-    const validatedUrl = validateUrl(url);
+    const cleanUrl = url.trim();
+    if(cleanUrl.length > 2048) {
+        return NextResponse.json(
+            { error: "URL too long" },
+            { status: 400 }
+        );
+    }
+    
+    const validatedUrl = validateUrl(cleanUrl);
     if(!validatedUrl) {
         return NextResponse.json(
             { error: "Invalid URL" },
@@ -77,13 +85,14 @@ export async function POST(req: Request) {
 
     let shortCode: string | null = null;
 
+    const cleanAlias = alias?.trim();
     if(alias && isAliasRateLimited(ip)) {
         return NextResponse.json(
             { error: "Too many custom aliases created. Try again later." },
             { status: 429 }
         );
     } else if(alias) {
-        const isValid = /^[a-zA-Z0-9-]{3,30}$/.test(alias);
+        const isValid = /^[a-zA-Z0-9-]{3,30}$/.test(cleanAlias);
 
         if(!isValid) {
             return NextResponse.json(
@@ -92,7 +101,7 @@ export async function POST(req: Request) {
             );
         }
 
-        shortCode = alias;
+        shortCode = cleanAlias;
     }
     
     if(shortCode) {
