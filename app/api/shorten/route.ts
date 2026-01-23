@@ -2,6 +2,8 @@ import { generateShortCode } from "@/lib/shortCode";
 import { validateUrl } from "@/lib/validateUrl";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { headers } from "next/headers";
+import { isRateLimited } from "@/lib/rateLimiter";
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -11,6 +13,15 @@ export async function POST(req: Request) {
         return NextResponse.json(
             {error: "URL is required"},
             {status: 400}
+        );
+    }
+
+    const ip = (await headers()).get("x-forwarded-for")?.split(",")[0] ||"unknown";
+
+    if(isRateLimited(ip)) {
+        return NextResponse.json(
+            { error: "Too many requests. Please try again later." },
+            { status: 429 }
         );
     }
 
