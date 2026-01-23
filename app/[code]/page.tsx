@@ -27,16 +27,16 @@ export default async function RedirectPage({
     }
 
     //3. Incremenet click count
-    void supabase.rpc("increment_click_count", {
-        sc: code,
-    });
+    // void supabase.rpc("increment_click_count", {
+    //     sc: code,
+    // });
 
-    // const { error: incrementError } = await supabase.rpc(
-    //     "increment_click_count",
-    //     { sc: code }
-    // );
+    const { error: incrementError } = await supabase.rpc(
+        "increment_click_count",
+        { sc: code }
+    );
 
-    // console.log("click increment error:", incrementError);  // <- should return null
+    console.log("click increment error:", incrementError);  // <- should return null
 
     //4. Redirect
     console.log("redirect: ", data.long_url);
