@@ -3,7 +3,7 @@ import { validateUrl } from "@/lib/validateUrl";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { headers } from "next/headers";
-import { isRateLimited } from "@/lib/rateLimiter";
+import { isAliasRateLimited, isRateLimited } from "@/lib/rateLimiter";
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -77,7 +77,12 @@ export async function POST(req: Request) {
 
     let shortCode: string | null = null;
 
-    if(alias) {
+    if(alias && isAliasRateLimited(ip)) {
+        return NextResponse.json(
+            { error: "Too many custom aliases created. Try again later." },
+            { status: 429 }
+        );
+    } else if(alias) {
         const isValid = /^[a-zA-Z0-9-]{3,30}$/.test(alias);
 
         if(!isValid) {

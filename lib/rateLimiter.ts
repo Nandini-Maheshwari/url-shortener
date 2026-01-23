@@ -27,3 +27,28 @@ export function isRateLimited(ip: string) {
 
     return entry.count > MAX_REQUESTS;
 }
+
+const ALIAS_LIMIT = 3;
+const ALIAS_WINDOW = 60 * 60 * 1000; //1 hour
+
+const aliasStore = new Map<string, Entry>();
+
+export function isAliasRateLimited(ip: string) {
+    const now = Date.now();
+    const entry = aliasStore.get(ip);
+
+    if(!entry) {
+        aliasStore.set(ip, { count: 1, lastReset: now });
+        return false;
+    }
+
+    if(now - entry.lastReset > ALIAS_WINDOW) {
+        entry.count = 1;
+        entry.lastReset = now;
+        return false;
+    }
+
+    entry.count++;
+
+    return entry.count > ALIAS_LIMIT;
+}
