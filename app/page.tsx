@@ -1,6 +1,8 @@
 "use client"
 import { useState } from "react";
 
+const ALIAS_REGEX = /^[a-zA-Z0-9-]{3,30}$/;
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
@@ -8,11 +10,20 @@ export default function Home() {
   const [error, setError] = useState("");
   const [expiryOption, setExpiryOption] = useState("3d");
   const [customExpiry, setCustomExpiry] = useState("");
+  const [alias, setAlias] = useState("");
 
   async function handleShorten() {
     setLoading(true);
     setError("");
     setShortUrl("");
+
+    if (alias && !isAliasValid) {
+      setError(
+        "Invalid alias. Use 3–30 characters: letters, numbers, dashes only."
+      );
+      setLoading(false);
+      return;
+    }
 
     let expiresAt: string | undefined;
 
@@ -38,6 +49,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json"},
         body: JSON.stringify({ 
           url,
+          ...(alias && { alias }),
           ...(expiresAt && { expiresAt }),
         })
       });
@@ -58,6 +70,8 @@ export default function Home() {
     }
   }
 
+  const isAliasValid = alias.length === 0 || ALIAS_REGEX.test(alias);
+
   return (
     <main className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md space-y-4">
@@ -70,6 +84,30 @@ export default function Home() {
           onChange={(e) => setUrl(e.target.value)}
           className="w-full rounded border p-2"
         />
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium">
+            Custom alias (optional)
+          </label>
+          <input
+            type="text"
+            placeholder="my-custom-link"
+            value={alias}
+            onChange={(e) =>
+              setAlias(e.target.value.replace(/\s/g, ""))
+            } //removes spaces
+            className="w-full rounded border p-2"
+          />
+          <p className="text-xs text-gray-500">
+            Letters, numbers, and dashes only
+          </p>
+        </div>
+
+        {alias && !isAliasValid && (
+          <p className="text-xs text-red-500">
+            Alias must be 3–30 characters and contain only letters, numbers, or dashes
+          </p>
+        )}
 
         <button
           onClick={handleShorten}

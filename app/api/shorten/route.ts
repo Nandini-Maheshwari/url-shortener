@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
     const body = await req.json();
-    const { url, expiresAt } = body;
+    const { url, alias, expiresAt } = body;
 
     if(!url) {
         return NextResponse.json(
@@ -64,24 +64,52 @@ export async function POST(req: Request) {
         });
     }
 
-    let shortCode: string;
+    let shortCode: string | null = null;
+
+    if(alias) {
+        const isValid = /^[a-zA-Z0-9-]{3,30}$/.test(alias);
+
+        if(!isValid) {
+            return NextResponse.json(
+                { error: "Alias must be 3-30 characters and contain only letters, numbers or dashes" },
+                { status: 400 }
+            );
+        }
+
+        shortCode = alias;
+    }
+    
+    if(shortCode) {
+        const { data: existing } = await supabase
+            .from("short_urls")
+            .select("short_code")
+            .eq("short_code", shortCode)
+            .maybeSingle();
+
+        if(existing) {
+            return NextResponse.json(
+                { error: "This custom alias is already taken." },
+                { status: 400 }
+            );
+        }
+    }
+
     let attempts = 0;
 
-    while(attempts < 5) {
-        shortCode = generateShortCode();
+    while(!shortCode && attempts < 5) {
+        const candidate = generateShortCode();
 
         const { error } = await supabase
             .from("short_urls")
             .insert({
-                short_code: shortCode,
+                short_code: candidate,
                 long_url: validatedUrl,
                 expires_at: expiryDate,
             });
         
         if(!error) {
-            return NextResponse.json({
-                shortUrl: `http://localhost:3000/${shortCode}`,
-            });
+            shortCode = candidate;
+            break;
         }
 
         //retry only on unique constraint violation
@@ -95,8 +123,24 @@ export async function POST(req: Request) {
         attempts++;
     }
 
+    if(shortCode && alias) {
+        const { error } = await supabase
+            .from("short_urls")
+            .insert({
+                short_code: shortCode,
+                long_url: validatedUrl,
+                expires_at: expiryDate, 
+            });
+        
+        if(error) {
+            return NextResponse.json(
+                { error: "Failed to create custom alias" },
+                { status: 500 } 
+            ); 
+        }
+    }
+
     return NextResponse.json(
-        { error: "Failed to generate unique short url" },
-        { status: 500 }
+        { shortUrl: `http://localhost:3000/${shortCode}` }
     );
 }
