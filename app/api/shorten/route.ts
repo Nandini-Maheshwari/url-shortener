@@ -92,7 +92,7 @@ export async function POST(req: Request) {
 
     if (existing) {
         return NextResponse.json({
-            shortUrl: `http://localhost:3000/${existing.short_code}`,
+            shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/${existing.short_code}`
         });
     }
 
@@ -187,6 +187,6 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-        { shortUrl: `http://localhost:3000/${shortCode}` }
+        { shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/${shortCode}` }
     );
 }
