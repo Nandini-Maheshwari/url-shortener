@@ -44,6 +44,12 @@ export default function Home() {
       return;
     }
 
+    if (expiryOption === "custom" && !customExpiry) {
+      setError("Please enter both date and time for custom expiry.");
+      setLoading(false);
+      return;
+    }
+
     let expiresAt: string | undefined;
 
     if (expiryOption !== "custom") {
