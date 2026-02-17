@@ -22,7 +22,7 @@ export default async function RedirectPage({
     }
 
     //2. expiry check
-    if(data.expires_at && new Date(data.expires_at) < new Date()) {
+    if(data.expires_at !== null && new Date(data.expires_at) < new Date()) {
         notFound();
     }
 
@@ -32,7 +32,7 @@ export default async function RedirectPage({
     // });
 
     const { error: incrementError } = await supabase.rpc(
-        "increment_click_count",
+        "handle_short_url_click",
         { sc: code }
     );
 
