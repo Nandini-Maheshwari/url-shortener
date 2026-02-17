@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react";
+import Link from "next/link";
 
 const ALIAS_REGEX = /^[a-zA-Z0-9-]{3,30}$/;
 
@@ -50,9 +51,15 @@ export default function Home() {
       return;
     }
 
-    let expiresAt: string | undefined;
+    let expiresAt: string | null | undefined;
 
-    if (expiryOption !== "custom") {
+    if (expiryOption === "never") {
+      expiresAt = null;
+    } else if (expiryOption === "custom") {
+      if (customExpiry) {
+        expiresAt = new Date(customExpiry).toISOString();
+      }
+    } else {
       const now = new Date();
       const daysMap: Record<string, number> = {
         "1d": 1,
@@ -62,8 +69,6 @@ export default function Home() {
       };
       now.setDate(now.getDate() + daysMap[expiryOption]);
       expiresAt = now.toISOString();
-    } else if (expiryOption === "custom" && customExpiry) {
-      expiresAt = new Date(customExpiry).toISOString();
     }
 
     try {
@@ -73,7 +78,7 @@ export default function Home() {
         body: JSON.stringify({
           url,
           ...(alias && { alias }),
-          ...(expiresAt && { expiresAt }),
+          ...(expiresAt !== undefined && { expiresAt }),
         }),
       });
 
@@ -89,6 +94,17 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleReset() {
+    setUrl("");
+    setShortUrl("");
+    setError("");
+    setAlias("");
+    setExpiryOption("3d");
+    setCustomExpiry("");
+    setCopied(false);
+    setShowOptions(false);
   }
 
   const handleCopy = async () => {
@@ -109,9 +125,20 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
+      {/* Admin button */}
+      <Link
+        href="/admin/login"
+        className="absolute top-4 right-4 z-10 flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        Admin
+      </Link>
+
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] opacity-50" />
-      
+
       <div className="relative w-full max-w-lg">
         {/* Main card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200/50 p-8 md:p-10">
@@ -201,12 +228,13 @@ export default function Home() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Link expires in
                 </label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {[
                     { value: "1d", label: "1d" },
                     { value: "3d", label: "3d" },
                     { value: "7d", label: "7d" },
                     { value: "30d", label: "30d" },
+                    { value: "never", label: "Never" },
                     { value: "custom", label: "Custom" },
                   ].map((option) => (
                     <button
@@ -245,7 +273,7 @@ export default function Home() {
 
             {/* Shorten Button */}
             <button
-              onClick={handleShorten}
+              onClick={shortUrl ? handleReset : handleShorten}
               disabled={loading}
               className="w-full py-4 bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
@@ -256,6 +284,13 @@ export default function Home() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   <span>Shortening...</span>
+                </>
+              ) : shortUrl ? (
+                <>
+                  <span>Shorten another URL</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                 </>
               ) : (
                 <>

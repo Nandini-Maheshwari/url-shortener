@@ -54,9 +54,11 @@ export async function POST(req: Request) {
         );
     }
 
-    let expiryDate: string;
+    let expiryDate: string | null;
 
-    if(expiresAt) {
+    if(expiresAt === null) {
+        expiryDate = null;
+    } else if(expiresAt) {
         const date = new Date(expiresAt);
         if(isNaN(date.getTime())) {
             return NextResponse.json(
