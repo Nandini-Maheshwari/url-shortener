@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { after } from "next/server";
 import { supabase } from "@/lib/supabase";
 
 export default async function RedirectPage({
@@ -6,8 +7,6 @@ export default async function RedirectPage({
 }: {
     params: Promise<{ code: string }>;
 }) {
-    console.log("hit");
-
     const { code } = await params;
     
     //1. fetch url
@@ -26,20 +25,13 @@ export default async function RedirectPage({
         notFound();
     }
 
-    //3. Incremenet click count
-    // void supabase.rpc("increment_click_count", {
-    //     sc: code,
-    // });
-
-    const { error: incrementError } = await supabase.rpc(
-        "handle_short_url_click",
-        { sc: code }
-    );
-
-    console.log("click increment error:", incrementError);  // <- should return null
+    //3. Increment click count after the response is sent, so the redirect doesn't wait on it
+    after(async () => {
+        const { error } = await supabase.rpc("handle_short_url_click", { sc: code });
+        if (error) console.error("click increment failed:", error);
+    });
 
     //4. Redirect
-    console.log("redirect: ", data.long_url);
     redirect(data.long_url);
 }
 
